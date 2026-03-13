@@ -1,0 +1,100 @@
+.admin-page { display: flex; flex-direction: column; gap: 24px; max-width: 640px; margin: 0 auto; width: 100%; }
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.admin-header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+}
+.stat-num { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+.stat-label { font-size: 12px; color: var(--text3); margin-top: 4px; text-transform: uppercase; letter-spacing: .05em; }
+
+.admin-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.row-gap { display: flex; gap: 8px; align-items: center; }
+
+.teams-admin-list { display: flex; flex-direction: column; gap: 8px; }
+.team-admin-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.team-admin-name { flex: 1; font-size: 14px; font-weight: 500; }
+
+/* QR */
+.qr-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.qr-img {
+  width: 200px;
+  height: 200px;
+  border-radius: 8px;
+  border: 4px solid var(--bg2);
+}
+.qr-url {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  word-break: break-all;
+  background: var(--bg2);
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.qr-hint { font-size: 12px; color: var(--text3); }
+
+/* Login */
+.admin-login-wrap {
+  display: flex;
+  justify-content: center;
+  padding-top: 40px;
+}
+.admin-login-card {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+}
+.admin-login-icon { font-size: 44px; }
+.admin-login-card h2 { font-size: 20px; font-weight: 700; }
+.admin-login-sub { font-size: 14px; color: var(--text2); }
+.pin-error { font-size: 13px; color: var(--red); }
+.admin-hint { font-size: 12px; color: var(--text3); }
