@@ -1,101 +1,54 @@
-.vote-page { display: flex; flex-direction: column; gap: 16px; }
+import React, { useEffect } from 'react'
+import { Routes, Route, NavLink, useLocation } from 'react-router-dom'
+import { socket } from './api'
+import VotePage from './pages/VotePage'
+import LeaderboardPage from './pages/LeaderboardPage'
+import AdminPage from './pages/AdminPage'
+import './App.css'
 
-.vote-header { margin-bottom: 4px; }
-.vote-header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
-.vote-sub { font-size: 14px; color: var(--text2); margin-top: 6px; line-height: 1.5; }
+export default function App() {
+  const location = useLocation()
+  useEffect(() => {
+    socket.connect()
+    return () => socket.disconnect()
+  }, [])
 
-.teams-list { display: flex; flex-direction: column; gap: 10px; }
+  const isBoard = location.pathname === '/board'
+  const isAdmin = location.pathname === '/admin'
 
-.team-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 16px 18px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.15s;
-  color: var(--text);
+  // Leaderboard: full screen no nav
+  // Admin: show nav with all links
+  // Vote page: show nav with ONLY Vote link (no leaderboard for voters)
+
+  return (
+    <div className="app-shell">
+      {!isBoard && (
+        <nav className="top-nav">
+          <span className="nav-logo">🗳 HackVote</span>
+          <div className="nav-links">
+            <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              Vote
+            </NavLink>
+            {isAdmin && (
+              <>
+                <NavLink to="/board" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                  Leaderboard
+                </NavLink>
+                <NavLink to="/admin" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                  Admin
+                </NavLink>
+              </>
+            )}
+          </div>
+        </nav>
+      )}
+      <main className={isBoard ? 'main-full' : 'main-content'}>
+        <Routes>
+          <Route path="/" element={<VotePage />} />
+          <Route path="/board" element={<LeaderboardPage />} />
+          <Route path="/admin" element={<AdminPage />} />
+        </Routes>
+      </main>
+    </div>
+  )
 }
-.team-card:hover { border-color: var(--border2); background: var(--surface2); }
-.team-card.selected {
-  border-color: var(--accent);
-  background: rgba(124,110,255,0.1);
-  animation: glow 2s ease-in-out infinite;
-}
-.team-card.my-prev { border-color: rgba(245,200,66,0.3); background: rgba(245,200,66,0.05); }
-
-.team-badge { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; border: 1px solid; }
-
-.team-card-name { flex: 1; font-size: 16px; font-weight: 500; }
-
-.current-tag {
-  background: rgba(245,200,66,0.15);
-  color: #fde047;
-  border: 1px solid rgba(245,200,66,0.25);
-  font-size: 11px;
-}
-
-.radio-dot {
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  border: 2px solid var(--border2);
-  flex-shrink: 0;
-  transition: all 0.15s;
-  position: relative;
-}
-.radio-dot.radio-on {
-  border-color: var(--accent);
-  background: var(--accent);
-  box-shadow: 0 0 0 3px rgba(124,110,255,0.25);
-}
-.radio-dot.radio-on::after {
-  content: '';
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%,-50%);
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: #fff;
-}
-
-.change-warning {
-  background: rgba(245,200,66,0.1);
-  border: 1px solid rgba(245,200,66,0.25);
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
-  font-size: 13px;
-  color: #fde047;
-  line-height: 1.5;
-}
-
-.cast-btn { width: 100%; padding: 14px; font-size: 15px; margin-top: 4px; }
-
-.voted-confirm {
-  text-align: center;
-  padding: 40px 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-.voted-icon { font-size: 52px; margin-bottom: 8px; }
-.voted-confirm h2 { font-size: 22px; font-weight: 700; }
-.voted-for { color: var(--text2); font-size: 15px; }
-.voted-for strong { color: var(--text); }
-.voted-changed { font-size: 13px; color: var(--text3); }
-
-.vote-closed {
-  text-align: center;
-  padding: 40px 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-.vote-closed-icon { font-size: 48px; }
-.vote-closed h2 { font-size: 20px; font-weight: 600; }
-.vote-closed p { font-size: 14px; color: var(--text2); line-height: 1.6; }
