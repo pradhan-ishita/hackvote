@@ -1,139 +1,172 @@
-import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
-import API_BASE_URL from "../config";
+.vote-page { display: flex; flex-direction: column; gap: 20px; padding-bottom: 40px; }
 
-const socket = io(API_BASE_URL, {
-  transports: ["websocket", "polling"],
-});
+.vote-header {
+  text-align: center;
+  padding: 24px 0 8px;
+}
+.vote-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #fff 0%, #9896b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+.vote-sub {
+  font-size: 13px;
+  color: var(--text3);
+  line-height: 1.6;
+  max-width: 360px;
+  margin: 0 auto;
+}
 
-export default function VotePage() {
-  const [eventTitle, setEventTitle] = useState("");
-  const [teams, setTeams] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(true);
+.teams-list { display: flex; flex-direction: column; gap: 8px; }
 
-  useEffect(() => {
-    fetchInitialData();
+.team-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+  color: var(--text);
+  position: relative;
+  overflow: hidden;
+}
+.team-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: transparent;
+  transition: background 0.15s;
+}
+.team-card:hover { border-color: var(--border2); background: var(--surface2); }
+.team-card:hover::before { background: var(--accent); }
+.team-card.selected {
+  border-color: var(--accent);
+  background: rgba(124,110,255,0.08);
+}
+.team-card.selected::before { background: var(--accent); }
+.team-card.my-prev {
+  border-color: rgba(245,200,66,0.3);
+  background: rgba(245,200,66,0.05);
+}
+.team-card.my-prev::before { background: #f5c842; }
 
-    socket.on("leaderboard_update", (data) => {
-      setLeaderboard(data);
-    });
+.team-num {
+  font-size: 11px;
+  font-weight: 700;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid;
+  letter-spacing: 0;
+}
 
-    socket.on("event_update", (event) => {
-      if (event?.title) setEventTitle(event.title);
-    });
+.team-card-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
 
-    return () => {
-      socket.off("leaderboard_update");
-      socket.off("event_update");
-    };
-  }, []);
+.current-tag {
+  background: rgba(245,200,66,0.15);
+  color: #fde047;
+  border: 1px solid rgba(245,200,66,0.25);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 
-  const fetchInitialData = async () => {
-    try {
-      setLoading(true);
+.radio-dot {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border2);
+  flex-shrink: 0;
+  transition: all 0.15s;
+  position: relative;
+}
+.radio-dot.radio-on {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.radio-dot.radio-on::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #fff;
+}
 
-      const eventRes = await fetch(`${API_BASE_URL}/api/event`);
-      const eventData = await eventRes.json();
+.change-warning {
+  background: rgba(245,200,66,0.08);
+  border: 1px solid rgba(245,200,66,0.2);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #fde047;
+  line-height: 1.5;
+}
 
-      setEventTitle(eventData?.event?.title || "Hackathon Event");
-      setTeams(eventData?.teams || []);
+.cast-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  position: sticky;
+  bottom: 16px;
+  box-shadow: 0 4px 24px rgba(124,110,255,0.4);
+}
 
-      const leaderboardRes = await fetch(`${API_BASE_URL}/api/leaderboard`);
-      const leaderboardData = await leaderboardRes.json();
-      setLeaderboard(leaderboardData || []);
-    } catch (error) {
-      console.error("Error loading data:", error);
-      setMessage("Failed to load data");
-    } finally {
-      setLoading(false);
-    }
-  };
+.voted-confirm {
+  text-align: center;
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  animation: slideUp 0.4s ease both;
+}
+.voted-icon { font-size: 56px; margin-bottom: 4px; }
+.voted-confirm h2 { font-size: 24px; font-weight: 700; }
+.voted-for { color: var(--text2); font-size: 15px; }
+.voted-for strong { color: var(--text); }
+.voted-changed { font-size: 13px; color: var(--text3); }
 
-  const handleVote = async (teamId) => {
-    try {
-      let voterId = localStorage.getItem("voterId");
+.vote-closed {
+  text-align: center;
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.vote-closed-icon { font-size: 52px; }
+.vote-closed h2 { font-size: 20px; font-weight: 600; }
+.vote-closed p { font-size: 14px; color: var(--text2); line-height: 1.6; }
 
-      if (!voterId) {
-        voterId = crypto.randomUUID();
-        localStorage.setItem("voterId", voterId);
-      }
-
-      const res = await fetch(`${API_BASE_URL}/api/vote`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ voterId, teamId }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setMessage(data?.error || "Vote failed");
-        return;
-      }
-
-      setMessage(`Vote submitted for ${data.teamName}`);
-    } catch (error) {
-      console.error("Vote error:", error);
-      setMessage("Vote failed");
-    }
-  };
-
-  if (loading) {
-    return <div style={{ color: "white", padding: "20px" }}>Loading...</div>;
-  }
-
-  return (
-    <div style={{ padding: "20px", color: "white", background: "#050816", minHeight: "100vh" }}>
-      <h1>{eventTitle}</h1>
-
-      {message && <p>{message}</p>}
-
-      <h2>Teams</h2>
-      {teams.length === 0 ? (
-        <p>No teams found</p>
-      ) : (
-        teams.map((team) => (
-          <div
-            key={team._id}
-            style={{
-              border: "1px solid #333",
-              marginBottom: "10px",
-              padding: "12px",
-              borderRadius: "10px",
-              background: "#1b1b35",
-            }}
-          >
-            <p>{team.name}</p>
-            <button onClick={() => handleVote(team._id)}>Vote</button>
-          </div>
-        ))
-      )}
-
-      <h2 style={{ marginTop: "30px" }}>Leaderboard</h2>
-      {leaderboard.length === 0 ? (
-        <p>No votes yet</p>
-      ) : (
-        leaderboard.map((item, index) => (
-          <div
-            key={item._id}
-            style={{
-              border: "1px solid #333",
-              marginBottom: "10px",
-              padding: "12px",
-              borderRadius: "10px",
-              background: "#1b1b35",
-            }}
-          >
-            <p>
-              #{index + 1} {item.name} - {item.votes} votes
-            </p>
-          </div>
-        ))
-      )}
-    </div>
-  );
+.teams-count {
+  font-size: 12px;
+  color: var(--text3);
+  text-align: center;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
