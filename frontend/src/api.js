@@ -1,9 +1,8 @@
 import axios from 'axios'
 import { io } from 'socket.io-client'
 
-const API_BASE = import.meta.env.VITE_API_URL || ''
-const SOCKET_URL = import.meta.env.VITE_API_URL || '/'
-
+const API_BASE = import.meta.env.VITE_API_URL || 'https://hackvote.onrender.com'
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'https://hackvote.onrender.com'
 export function getVoterId() {
   let id = localStorage.getItem('hackvote_voter_id')
   if (!id) {
