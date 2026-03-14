@@ -8,17 +8,15 @@ import './App.css'
 
 export default function App() {
   const location = useLocation()
+
+  // Connect socket once
   useEffect(() => {
     socket.connect()
     return () => socket.disconnect()
   }, [])
 
+  // Leaderboard page is full-screen (no nav — intended as public display)
   const isBoard = location.pathname === '/board'
-  const isAdmin = location.pathname === '/admin'
-
-  // Leaderboard: full screen no nav
-  // Admin: show nav with all links
-  // Vote page: show nav with ONLY Vote link (no leaderboard for voters)
 
   return (
     <div className="app-shell">
@@ -29,16 +27,9 @@ export default function App() {
             <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
               Vote
             </NavLink>
-            {isAdmin && (
-              <>
-                <NavLink to="/board" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-                  Leaderboard
-                </NavLink>
-                <NavLink to="/admin" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-                  Admin
-                </NavLink>
-              </>
-            )}
+            <NavLink to="/admin" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              Admin
+            </NavLink>
           </div>
         </nav>
       )}
