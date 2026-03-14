@@ -9,14 +9,13 @@ import './App.css'
 export default function App() {
   const location = useLocation()
 
-  // Connect socket once
   useEffect(() => {
     socket.connect()
     return () => socket.disconnect()
   }, [])
 
-  // Leaderboard page is full-screen (no nav — intended as public display)
   const isBoard = location.pathname === '/board'
+  const isAdmin = location.pathname === '/admin'
 
   return (
     <div className="app-shell">
@@ -24,12 +23,16 @@ export default function App() {
         <nav className="top-nav">
           <span className="nav-logo">🗳 HackVote</span>
           <div className="nav-links">
-            <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-              Vote
-            </NavLink>
-            <NavLink to="/admin" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-              Admin
-            </NavLink>
+            {!isAdmin && (
+              <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                Vote
+              </NavLink>
+            )}
+            {isAdmin && (
+              <NavLink to="/admin" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                Admin
+              </NavLink>
+            )}
           </div>
         </nav>
       )}
