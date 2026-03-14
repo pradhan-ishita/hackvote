@@ -15,6 +15,8 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 // ── Socket.io ──────────────────────────────────────────────────────
 const io = new Server(server, {
   cors: { origin: '*', methods: ['GET', 'POST'] },
+  transports: ['polling', 'websocket'],
+  allowEIO3: true,
 });
 
 // ── Middleware ─────────────────────────────────────────────────────
@@ -191,7 +193,6 @@ app.get('/api/admin/stats', adminAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// QR: uses FRONTEND_URL env var (set to your Vercel URL after deploy)
 app.get('/api/admin/qr', adminAuth, async (req, res) => {
   try {
     const voteUrl = FRONTEND_URL + '/';

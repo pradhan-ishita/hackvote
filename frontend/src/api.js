@@ -1,8 +1,6 @@
 import axios from 'axios'
 import { io } from 'socket.io-client'
 
-// In production: VITE_API_URL = your Render backend URL
-// In dev: empty string → Vite proxy handles it
 const API_BASE = import.meta.env.VITE_API_URL || ''
 const SOCKET_URL = import.meta.env.VITE_API_URL || '/'
 
@@ -40,5 +38,5 @@ export const api = {
 
 export const socket = io(SOCKET_URL, {
   autoConnect: false,
-  transports: ['websocket', 'polling'],
+  transports: ['polling', 'websocket'],  // polling first for Render
 })
