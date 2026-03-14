@@ -1,125 +1,139 @@
-import React, { useState, useEffect } from 'react'
-import { api, getVoterId } from '../api'
-import './VotePage.css'
+import { useEffect, useState } from "react";
+import { io } from "socket.io-client";
+import API_BASE_URL from "../config";
+
+const socket = io(API_BASE_URL, {
+  transports: ["websocket", "polling"],
+});
 
 export default function VotePage() {
-  const [event, setEvent] = useState(null)
-  const [teams, setTeams] = useState([])
-  const [myVoteId, setMyVoteId] = useState(null)
-  const [selected, setSelected] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [voted, setVoted] = useState(false)
-  const [votedTeamName, setVotedTeamName] = useState('')
-  const [wasChange, setWasChange] = useState(false)
-  const voterId = getVoterId()
+  const [eventTitle, setEventTitle] = useState("");
+  const [teams, setTeams] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    load()
-  }, [])
+    fetchInitialData();
 
-  async function load() {
-    setLoading(true)
+    socket.on("leaderboard_update", (data) => {
+      setLeaderboard(data);
+    });
+
+    socket.on("event_update", (event) => {
+      if (event?.title) setEventTitle(event.title);
+    });
+
+    return () => {
+      socket.off("leaderboard_update");
+      socket.off("event_update");
+    };
+  }, []);
+
+  const fetchInitialData = async () => {
     try {
-      const [{ event, teams }, { teamId }] = await Promise.all([
-        api.getEvent(),
-        api.getMyVote(voterId),
-      ])
-      setEvent(event)
-      setTeams(teams)
-      setMyVoteId(teamId)
-      setSelected(teamId)
-      if (teamId) setVoted(true)
-    } catch (e) {
-      console.error(e)
-    }
-    setLoading(false)
-  }
+      setLoading(true);
 
-  async function handleVote() {
-    if (!selected) return
-    setSubmitting(true)
+      const eventRes = await fetch(`${API_BASE_URL}/api/event`);
+      const eventData = await eventRes.json();
+
+      setEventTitle(eventData?.event?.title || "Hackathon Event");
+      setTeams(eventData?.teams || []);
+
+      const leaderboardRes = await fetch(`${API_BASE_URL}/api/leaderboard`);
+      const leaderboardData = await leaderboardRes.json();
+      setLeaderboard(leaderboardData || []);
+    } catch (error) {
+      console.error("Error loading data:", error);
+      setMessage("Failed to load data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVote = async (teamId) => {
     try {
-      const res = await api.castVote(voterId, selected)
-      setMyVoteId(selected)
-      setVoted(true)
-      setVotedTeamName(res.teamName)
-      setWasChange(res.changed)
-    } catch (e) {
-      alert(e.response?.data?.error || 'Something went wrong')
+      let voterId = localStorage.getItem("voterId");
+
+      if (!voterId) {
+        voterId = crypto.randomUUID();
+        localStorage.setItem("voterId", voterId);
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/vote`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ voterId, teamId }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessage(data?.error || "Vote failed");
+        return;
+      }
+
+      setMessage(`Vote submitted for ${data.teamName}`);
+    } catch (error) {
+      console.error("Vote error:", error);
+      setMessage("Vote failed");
     }
-    setSubmitting(false)
+  };
+
+  if (loading) {
+    return <div style={{ color: "white", padding: "20px" }}>Loading...</div>;
   }
-
-  if (loading) return (
-    <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 60 }}>
-      <div className="spinner" />
-    </div>
-  )
-
-  if (!event?.isVotingOpen) return (
-    <div className="vote-closed card">
-      <div className="vote-closed-icon">🔒</div>
-      <h2>Voting is Closed</h2>
-      <p>The organizers have closed voting. Check the leaderboard for results!</p>
-    </div>
-  )
-
-  if (voted) return (
-    <div className="voted-confirm fade-in card">
-      <div className="voted-icon">✅</div>
-      <h2>Vote Recorded!</h2>
-      <p className="voted-for">You voted for <strong>{votedTeamName}</strong></p>
-      {wasChange && <p className="voted-changed">Your previous vote was cancelled.</p>}
-      <button className="btn" onClick={() => { setVoted(false) }} style={{ marginTop: 20 }}>
-        ✏️ Change my vote
-      </button>
-    </div>
-  )
 
   return (
-    <div className="vote-page slide-up">
-      <div className="vote-header">
-        <h1>{event?.title}</h1>
-        <p className="vote-sub">Pick your favourite team. You can change your vote — your previous one will be cancelled.</p>
-      </div>
+    <div style={{ padding: "20px", color: "white", background: "#050816", minHeight: "100vh" }}>
+      <h1>{eventTitle}</h1>
 
-      <div className="teams-list">
-        {teams.map((t, i) => {
-          const isSelected = selected === t._id
-          const isMine = myVoteId === t._id
-          return (
-            <button
-              key={t._id}
-              className={`team-card ${isSelected ? 'selected' : ''} ${isMine && !isSelected ? 'my-prev' : ''}`}
-              onClick={() => setSelected(t._id)}
-            >
-              <span className={`team-badge tag team-color-${t.colorIndex % 6}`}>
-                {i + 1}
-              </span>
-              <span className="team-card-name">{t.name}</span>
-              {isMine && (
-                <span className="current-tag tag">Your vote</span>
-              )}
-              <span className={`radio-dot ${isSelected ? 'radio-on' : ''}`} />
-            </button>
-          )
-        })}
-      </div>
+      {message && <p>{message}</p>}
 
-      {selected && myVoteId && selected !== myVoteId && (
-        <div className="change-warning fade-in">
-          ⚠️ This will cancel your vote for <strong>{teams.find(t => t._id === myVoteId)?.name}</strong> and count it for the new team.
-        </div>
+      <h2>Teams</h2>
+      {teams.length === 0 ? (
+        <p>No teams found</p>
+      ) : (
+        teams.map((team) => (
+          <div
+            key={team._id}
+            style={{
+              border: "1px solid #333",
+              marginBottom: "10px",
+              padding: "12px",
+              borderRadius: "10px",
+              background: "#1b1b35",
+            }}
+          >
+            <p>{team.name}</p>
+            <button onClick={() => handleVote(team._id)}>Vote</button>
+          </div>
+        ))
       )}
 
-      <button
-        className="btn btn-primary cast-btn"
-        onClick={handleVote}
-        disabled={!selected || submitting}
-      >
-        {submitting ? <span className="spinner" style={{ width: 16, height: 16 }} /> : '🗳 Cast Vote'}
-      </button>
+      <h2 style={{ marginTop: "30px" }}>Leaderboard</h2>
+      {leaderboard.length === 0 ? (
+        <p>No votes yet</p>
+      ) : (
+        leaderboard.map((item, index) => (
+          <div
+            key={item._id}
+            style={{
+              border: "1px solid #333",
+              marginBottom: "10px",
+              padding: "12px",
+              borderRadius: "10px",
+              background: "#1b1b35",
+            }}
+          >
+            <p>
+              #{index + 1} {item.name} - {item.votes} votes
+            </p>
+          </div>
+        ))
+      )}
     </div>
-  )
+  );
 }

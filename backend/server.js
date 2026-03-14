@@ -25,7 +25,10 @@ app.use(express.json());
 
 // ── DB ─────────────────────────────────────────────────────────────
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/hackvote')
-  .then(() => { console.log('✅ MongoDB connected'); seedDefaultData(); })
+  .then(() => {
+    console.log('✅ MongoDB connected');
+    seedDefaultData();
+  })
   .catch(err => console.error('❌ MongoDB error:', err));
 
 const DEFAULT_TEAMS = [
@@ -73,115 +76,231 @@ const DEFAULT_TEAMS = [
 ];
 
 async function seedDefaultData() {
-  const count = await Event.countDocuments();
-  if (count === 0) await Event.create({ title: 'Hackathon 2025' });
-  const teamCount = await Team.countDocuments();
-  if (teamCount === 0) {
-    for (let i = 0; i < DEFAULT_TEAMS.length; i++) {
-      const { id, name } = DEFAULT_TEAMS[i];
-      await Team.create({ name: `[${id}] ${name}`, colorIndex: i % 6, order: i });
+  try {
+    const count = await Event.countDocuments();
+    if (count === 0) {
+      await Event.create({ title: 'Hackathon 2025' });
     }
-    console.log(`👥 ${DEFAULT_TEAMS.length} teams seeded`);
+
+    const teamCount = await Team.countDocuments();
+    if (teamCount === 0) {
+      for (let i = 0; i < DEFAULT_TEAMS.length; i++) {
+        const { id, name } = DEFAULT_TEAMS[i];
+        await Team.create({
+          name: `[${id}] ${name}`,
+          colorIndex: i % 6,
+          order: i
+        });
+      }
+      console.log(`👥 ${DEFAULT_TEAMS.length} teams seeded`);
+    }
+  } catch (error) {
+    console.error('❌ Seed error:', error.message);
   }
 }
 
 async function buildLeaderboard() {
   const teams = await Team.find().sort({ order: 1 });
   const votes = await Vote.find();
+
   const countMap = {};
-  teams.forEach(t => (countMap[t._id.toString()] = 0));
-  votes.forEach(v => { const k = v.teamId.toString(); if (countMap[k] !== undefined) countMap[k]++; });
-  const result = teams.map(t => ({ _id: t._id, name: t.name, colorIndex: t.colorIndex, order: t.order, votes: countMap[t._id.toString()] }));
+  teams.forEach(t => {
+    countMap[t._id.toString()] = 0;
+  });
+
+  votes.forEach(v => {
+    const k = v.teamId.toString();
+    if (countMap[k] !== undefined) countMap[k]++;
+  });
+
+  const result = teams.map(t => ({
+    _id: t._id,
+    name: t.name,
+    colorIndex: t.colorIndex,
+    order: t.order,
+    votes: countMap[t._id.toString()]
+  }));
+
   result.sort((a, b) => b.votes - a.votes);
   return result;
 }
 
 function emitLeaderboardUpdate() {
-  buildLeaderboard().then(data => io.emit('leaderboard_update', data));
+  buildLeaderboard()
+    .then(data => io.emit('leaderboard_update', data))
+    .catch(err => console.error('❌ Leaderboard emit error:', err.message));
 }
 
 function adminAuth(req, res, next) {
   const pin = req.headers['x-admin-pin'];
-  if (pin !== (process.env.ADMIN_PIN || '1234')) return res.status(401).json({ error: 'Unauthorized' });
+  if (pin !== (process.env.ADMIN_PIN || '1234')) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
   next();
 }
 
 // ── Routes ─────────────────────────────────────────────────────────
+
+// Test route
+app.get('/', (req, res) => {
+  res.send('Hackathon Voting API Running');
+});
+
 app.get('/api/event', async (req, res) => {
-  try { const event = await Event.findOne(); const teams = await Team.find().sort({ order: 1 }); res.json({ event, teams }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
+  try {
+    const event = await Event.findOne();
+    const teams = await Team.find().sort({ order: 1 });
+    res.json({ event, teams });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ✅ Missing route added here
+app.get('/api/teams', async (req, res) => {
+  try {
+    const teams = await Team.find().sort({ order: 1 });
+    res.json(teams);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.get('/api/leaderboard', async (req, res) => {
-  try { res.json(await buildLeaderboard()); } catch (e) { res.status(500).json({ error: e.message }); }
+  try {
+    const leaderboard = await buildLeaderboard();
+    res.json(leaderboard);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.get('/api/my-vote/:voterId', async (req, res) => {
-  try { const vote = await Vote.findOne({ voterId: req.params.voterId }); res.json({ teamId: vote?.teamId || null }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
+  try {
+    const vote = await Vote.findOne({ voterId: req.params.voterId });
+    res.json({ teamId: vote?.teamId || null });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.post('/api/vote', async (req, res) => {
   try {
     const { voterId, teamId } = req.body;
-    if (!voterId || !teamId) return res.status(400).json({ error: 'Missing fields' });
+
+    if (!voterId || !teamId) {
+      return res.status(400).json({ error: 'Missing fields' });
+    }
+
     const event = await Event.findOne();
-    if (!event?.isVotingOpen) return res.status(403).json({ error: 'Voting is closed' });
+    if (!event?.isVotingOpen) {
+      return res.status(403).json({ error: 'Voting is closed' });
+    }
+
     const team = await Team.findById(teamId);
-    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found' });
+    }
+
     const prev = await Vote.findOne({ voterId });
     const wasChange = prev && prev.teamId.toString() !== teamId;
-    await Vote.findOneAndUpdate({ voterId }, { teamId, votedAt: new Date() }, { upsert: true, new: true });
+
+    await Vote.findOneAndUpdate(
+      { voterId },
+      { teamId, votedAt: new Date() },
+      { upsert: true, new: true }
+    );
+
     emitLeaderboardUpdate();
-    res.json({ success: true, changed: wasChange, teamName: team.name });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+
+    res.json({
+      success: true,
+      changed: wasChange,
+      teamName: team.name
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.post('/api/admin/verify', (req, res) => {
   const { pin } = req.body;
-  if (pin !== (process.env.ADMIN_PIN || '1234')) return res.status(401).json({ error: 'Wrong PIN' });
+  if (pin !== (process.env.ADMIN_PIN || '1234')) {
+    return res.status(401).json({ error: 'Wrong PIN' });
+  }
   res.json({ success: true });
 });
 
 app.put('/api/admin/event', adminAuth, async (req, res) => {
   try {
     const { title, isVotingOpen } = req.body;
-    const event = await Event.findOneAndUpdate({}, { ...(title !== undefined && { title }), ...(isVotingOpen !== undefined && { isVotingOpen }) }, { new: true });
+
+    const updateData = {};
+    if (title !== undefined) updateData.title = title;
+    if (isVotingOpen !== undefined) updateData.isVotingOpen = isVotingOpen;
+
+    const event = await Event.findOneAndUpdate({}, updateData, { new: true });
+
     io.emit('event_update', event);
     res.json(event);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.post('/api/admin/teams', adminAuth, async (req, res) => {
   try {
     const { name } = req.body;
     const count = await Team.countDocuments();
-    const team = await Team.create({ name, colorIndex: count % 6, order: count });
+
+    const team = await Team.create({
+      name,
+      colorIndex: count % 6,
+      order: count
+    });
+
     emitLeaderboardUpdate();
     res.json(team);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.put('/api/admin/teams/:id', adminAuth, async (req, res) => {
   try {
-    const team = await Team.findByIdAndUpdate(req.params.id, { name: req.body.name }, { new: true });
+    const team = await Team.findByIdAndUpdate(
+      req.params.id,
+      { name: req.body.name },
+      { new: true }
+    );
+
     emitLeaderboardUpdate();
     res.json(team);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.delete('/api/admin/teams/:id', adminAuth, async (req, res) => {
   try {
     await Team.findByIdAndDelete(req.params.id);
     await Vote.deleteMany({ teamId: req.params.id });
+
     emitLeaderboardUpdate();
     res.json({ success: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.delete('/api/admin/votes', adminAuth, async (req, res) => {
-  try { await Vote.deleteMany({}); emitLeaderboardUpdate(); res.json({ success: true }); }
-  catch (e) { res.status(500).json({ error: e.message }); }
+  try {
+    await Vote.deleteMany({});
+    emitLeaderboardUpdate();
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.get('/api/admin/stats', adminAuth, async (req, res) => {
@@ -189,23 +308,43 @@ app.get('/api/admin/stats', adminAuth, async (req, res) => {
     const totalVotes = await Vote.countDocuments();
     const uniqueVoters = await Vote.distinct('voterId');
     const teams = await Team.countDocuments();
-    res.json({ totalVotes, uniqueVoters: uniqueVoters.length, teams });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+
+    res.json({
+      totalVotes,
+      uniqueVoters: uniqueVoters.length,
+      teams
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.get('/api/admin/qr', adminAuth, async (req, res) => {
   try {
     const voteUrl = FRONTEND_URL + '/';
     const qr = await QRCode.toDataURL(voteUrl, { width: 300, margin: 2 });
+
     res.json({ qr, url: voteUrl });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
+// ── Socket connection ──────────────────────────────────────────────
 io.on('connection', (socket) => {
   console.log(`🔌 Client connected: ${socket.id}`);
-  buildLeaderboard().then(data => socket.emit('leaderboard_update', data));
-  socket.on('disconnect', () => console.log(`🔌 Disconnected: ${socket.id}`));
+
+  buildLeaderboard()
+    .then(data => socket.emit('leaderboard_update', data))
+    .catch(err => console.error('❌ Socket leaderboard error:', err.message));
+
+  socket.on('disconnect', () => {
+    console.log(`🔌 Disconnected: ${socket.id}`);
+  });
 });
 
+// ── Server start ───────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
