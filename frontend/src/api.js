@@ -1,85 +1,42 @@
-const API_BASE_URL = 'https://hackvote.onrender.com'
-const PIN_KEY = 'adminPin'
+import axios from 'axios'
+import { io } from 'socket.io-client'
 
-export function getStoredPin() {
-  return localStorage.getItem(PIN_KEY) || ''
+const API_BASE = import.meta.env.VITE_API_URL || ''
+const SOCKET_URL = import.meta.env.VITE_API_URL || window.location.origin
+
+export function getVoterId() {
+  let id = localStorage.getItem('hackvote_voter_id')
+  if (!id) {
+    id = 'v_' + Math.random().toString(36).slice(2, 12) + Date.now().toString(36)
+    localStorage.setItem('hackvote_voter_id', id)
+  }
+  return id
 }
 
-export function storePin(pin) {
-  localStorage.setItem(PIN_KEY, pin)
-}
+export function getStoredPin() { return sessionStorage.getItem('hackvote_admin_pin') || '' }
+export function storePin(pin) { sessionStorage.setItem('hackvote_admin_pin', pin) }
+export function clearPin() { sessionStorage.removeItem('hackvote_admin_pin') }
 
-export function clearPin() {
-  localStorage.removeItem(PIN_KEY)
-}
-
-async function request(path, options = {}) {
-  const pin = getStoredPin()
-
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(options.headers || {}),
-  }
-
-  if (pin) {
-    headers['x-admin-pin'] = pin
-  }
-
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-  })
-
-  const data = await res.json().catch(() => null)
-
-  if (!res.ok) {
-    const error = new Error(data?.error || 'Request failed')
-    error.status = res.status
-    error.response = { status: res.status, data }
-    throw error
-  }
-
-  return data
+function adminHeaders() {
+  return { 'x-admin-pin': getStoredPin() }
 }
 
 export const api = {
-  getEvent: () => request('/api/event'),
-
-  verifyPin: (pin) =>
-    request('/api/admin/verify', {
-      method: 'POST',
-      body: JSON.stringify({ pin }),
-    }),
-
-  getStats: () => request('/api/admin/stats'),
-
-  getQR: () => request('/api/admin/qr'),
-
-  updateEvent: (payload) =>
-    request('/api/admin/event', {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    }),
-
-  addTeam: (name) =>
-    request('/api/admin/teams', {
-      method: 'POST',
-      body: JSON.stringify({ name }),
-    }),
-
-  renameTeam: (id, name) =>
-    request(`/api/admin/teams/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ name }),
-    }),
-
-  deleteTeam: (id) =>
-    request(`/api/admin/teams/${id}`, {
-      method: 'DELETE',
-    }),
-
-  resetVotes: () =>
-    request('/api/admin/votes', {
-      method: 'DELETE',
-    }),
+  getEvent:       () => axios.get(`${API_BASE}/api/event`).then(r => r.data),
+  getLeaderboard: () => axios.get(`${API_BASE}/api/leaderboard`).then(r => r.data),
+  getMyVote:      (voterId) => axios.get(`${API_BASE}/api/my-vote/${voterId}`).then(r => r.data),
+  castVote:       (voterId, teamId) => axios.post(`${API_BASE}/api/vote`, { voterId, teamId }).then(r => r.data),
+  verifyPin:      (pin) => axios.post(`${API_BASE}/api/admin/verify`, { pin }).then(r => r.data),
+  updateEvent:    (data) => axios.put(`${API_BASE}/api/admin/event`, data, { headers: adminHeaders() }).then(r => r.data),
+  addTeam:        (name) => axios.post(`${API_BASE}/api/admin/teams`, { name }, { headers: adminHeaders() }).then(r => r.data),
+  renameTeam:     (id, name) => axios.put(`${API_BASE}/api/admin/teams/${id}`, { name }, { headers: adminHeaders() }).then(r => r.data),
+  deleteTeam:     (id) => axios.delete(`${API_BASE}/api/admin/teams/${id}`, { headers: adminHeaders() }).then(r => r.data),
+  resetVotes:     () => axios.delete(`${API_BASE}/api/admin/votes`, { headers: adminHeaders() }).then(r => r.data),
+  getStats:       () => axios.get(`${API_BASE}/api/admin/stats`, { headers: adminHeaders() }).then(r => r.data),
+  getQR:          () => axios.get(`${API_BASE}/api/admin/qr`, { headers: adminHeaders() }).then(r => r.data),
 }
+
+export const socket = io(SOCKET_URL, {
+  autoConnect: false,
+  transports: ['websocket', 'polling'],
+})

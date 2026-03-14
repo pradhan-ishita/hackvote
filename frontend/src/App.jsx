@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import { Routes, Route, NavLink, useLocation } from 'react-router-dom'
 import { socket } from './api'
 import VotePage from './pages/VotePage'
-import LeaderboardPage from './pages/LeaderboardPage'
+import LeaderboardPage from './pages/LeaderboardPage.jsx'
 import AdminPage from './pages/AdminPage'
 import './App.css'
 
