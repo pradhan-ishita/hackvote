@@ -1,27 +1,53 @@
-.vote-page { display: flex; flex-direction: column; gap: 20px; padding-bottom: 40px; }
+.vote-page { display: flex; flex-direction: column; gap: 16px; padding-bottom: 100px; }
 
+/* ── Header ── */
 .vote-header {
   text-align: center;
-  padding: 24px 0 8px;
+  padding: 28px 16px 8px;
+  position: relative;
+}
+.vote-header::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(124,110,255,0.15) 0%, transparent 70%);
+  pointer-events: none;
 }
 .vote-header h1 {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
-  letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #fff 0%, #9896b8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  letter-spacing: -1px;
+  color: var(--text);
   margin-bottom: 8px;
 }
 .vote-sub {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text3);
   line-height: 1.6;
-  max-width: 360px;
-  margin: 0 auto;
 }
 
+/* ── Counter badge ── */
+.teams-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.teams-count::before,
+.teams-count::after {
+  content: '';
+  height: 1px;
+  width: 40px;
+  background: var(--border);
+}
+
+/* ── Team cards ── */
 .teams-list { display: flex; flex-direction: column; gap: 8px; }
 
 .team-card {
@@ -32,47 +58,54 @@
   padding: 14px 16px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: 14px;
   cursor: pointer;
   text-align: left;
-  transition: all 0.15s;
+  transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
   color: var(--text);
   position: relative;
   overflow: hidden;
 }
-.team-card::before {
+.team-card::after {
   content: '';
   position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: transparent;
-  transition: background 0.15s;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(124,110,255,0.04) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.2s;
 }
-.team-card:hover { border-color: var(--border2); background: var(--surface2); }
-.team-card:hover::before { background: var(--accent); }
+.team-card:hover {
+  border-color: var(--border2);
+  background: var(--surface2);
+  transform: translateY(-1px);
+}
+.team-card:hover::after { opacity: 1; }
+.team-card:active { transform: scale(0.98); }
+
 .team-card.selected {
   border-color: var(--accent);
-  background: rgba(124,110,255,0.08);
+  background: rgba(124,110,255,0.1);
+  box-shadow: 0 0 0 1px rgba(124,110,255,0.3), 0 4px 20px rgba(124,110,255,0.15);
 }
-.team-card.selected::before { background: var(--accent); }
-.team-card.my-prev {
-  border-color: rgba(245,200,66,0.3);
-  background: rgba(245,200,66,0.05);
-}
-.team-card.my-prev::before { background: #f5c842; }
+.team-card.selected::after { opacity: 1; }
 
+.team-card.my-prev {
+  border-color: rgba(245,200,66,0.35);
+  background: rgba(245,200,66,0.06);
+}
+
+/* ── Number badge ── */
 .team-num {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
+  min-width: 30px;
+  height: 30px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   border: 1px solid;
-  letter-spacing: 0;
 }
 
 .team-card-name {
@@ -80,93 +113,113 @@
   font-size: 14px;
   font-weight: 500;
   line-height: 1.4;
+  color: var(--text);
 }
 
 .current-tag {
   background: rgba(245,200,66,0.15);
   color: #fde047;
-  border: 1px solid rgba(245,200,66,0.25);
+  border: 1px solid rgba(245,200,66,0.3);
   font-size: 10px;
-  padding: 2px 8px;
+  font-weight: 600;
+  padding: 3px 8px;
   border-radius: 20px;
   white-space: nowrap;
   flex-shrink: 0;
+  letter-spacing: 0.04em;
 }
 
+/* ── Radio ── */
 .radio-dot {
-  width: 16px; height: 16px;
+  width: 18px; height: 18px;
   border-radius: 50%;
   border: 2px solid var(--border2);
   flex-shrink: 0;
-  transition: all 0.15s;
+  transition: all 0.2s;
   position: relative;
+  background: transparent;
 }
 .radio-dot.radio-on {
   border-color: var(--accent);
   background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(124,110,255,0.2);
 }
 .radio-dot.radio-on::after {
   content: '';
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%,-50%);
-  width: 5px; height: 5px;
+  width: 6px; height: 6px;
   border-radius: 50%;
   background: #fff;
 }
 
+/* ── Warning ── */
 .change-warning {
   background: rgba(245,200,66,0.08);
   border: 1px solid rgba(245,200,66,0.2);
-  border-radius: var(--radius-sm);
-  padding: 10px 14px;
+  border-radius: 10px;
+  padding: 12px 14px;
   font-size: 13px;
   color: #fde047;
   line-height: 1.5;
 }
 
+/* ── Cast button ── */
 .cast-btn {
   width: 100%;
-  padding: 14px;
+  padding: 16px;
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  position: sticky;
-  bottom: 16px;
-  box-shadow: 0 4px 24px rgba(124,110,255,0.4);
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 480px;
+  width: calc(100% - 40px);
+  border-radius: 14px !important;
+  box-shadow: 0 8px 32px rgba(124,110,255,0.45);
+  z-index: 50;
+  transition: all 0.2s !important;
+}
+.cast-btn:not(:disabled):hover {
+  transform: translateX(-50%) translateY(-2px) !important;
+  box-shadow: 0 12px 40px rgba(124,110,255,0.55) !important;
+}
+.cast-btn:disabled {
+  opacity: 0.5;
+  box-shadow: none;
 }
 
+/* ── Voted confirm ── */
 .voted-confirm {
   text-align: center;
-  padding: 48px 24px;
+  padding: 56px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
   animation: slideUp 0.4s ease both;
 }
-.voted-icon { font-size: 56px; margin-bottom: 4px; }
-.voted-confirm h2 { font-size: 24px; font-weight: 700; }
+.voted-icon {
+  font-size: 64px;
+  margin-bottom: 4px;
+  animation: countUp 0.5s ease both;
+}
+.voted-confirm h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
 .voted-for { color: var(--text2); font-size: 15px; }
 .voted-for strong { color: var(--text); }
 .voted-changed { font-size: 13px; color: var(--text3); }
 
 .vote-closed {
   text-align: center;
-  padding: 48px 24px;
+  padding: 56px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
 }
-.vote-closed-icon { font-size: 52px; }
-.vote-closed h2 { font-size: 20px; font-weight: 600; }
+.vote-closed-icon { font-size: 56px; }
+.vote-closed h2 { font-size: 22px; font-weight: 700; }
 .vote-closed p { font-size: 14px; color: var(--text2); line-height: 1.6; }
-
-.teams-count {
-  font-size: 12px;
-  color: var(--text3);
-  text-align: center;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
