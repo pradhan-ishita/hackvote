@@ -16,23 +16,16 @@ export default function AdminPage() {
   const [editingTeam, setEditingTeam] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    if (loggedIn) loadAll()
-  }, [loggedIn])
+  useEffect(() => { if (loggedIn) loadAll() }, [loggedIn])
 
   async function loadAll() {
     setLoading(true)
     try {
       const [{ event, teams }, stats, qrData] = await Promise.all([
-        api.getEvent(),
-        api.getStats(),
-        api.getQR(),
+        api.getEvent(), api.getStats(), api.getQR(),
       ])
-      setEvent(event)
-      setTeams(teams)
-      setStats(stats)
-      setEditTitle(event?.title || '')
-      setQr(qrData)
+      setEvent(event); setTeams(teams); setStats(stats)
+      setEditTitle(event?.title || ''); setQr(qrData)
     } catch (e) {
       if (e.response?.status === 401 || e.status === 401) { logout(); return }
       console.error(e)
@@ -41,23 +34,13 @@ export default function AdminPage() {
   }
 
   async function handleLogin() {
-    setLoginLoading(true)
-    setPinError('')
-    try {
-      await api.verifyPin(pin)
-      storePin(pin)
-      setLoggedIn(true)
-    } catch (e) {
-      setPinError('Incorrect PIN. Try again.')
-    }
+    setLoginLoading(true); setPinError('')
+    try { await api.verifyPin(pin); storePin(pin); setLoggedIn(true) }
+    catch (e) { setPinError('Incorrect PIN. Try again.') }
     setLoginLoading(false)
   }
 
-  function logout() {
-    clearPin()
-    setLoggedIn(false)
-    setPin('')
-  }
+  function logout() { clearPin(); setLoggedIn(false); setPin('') }
 
   async function handleUpdateTitle() {
     if (!editTitle.trim()) return
@@ -73,9 +56,7 @@ export default function AdminPage() {
   async function handleAddTeam() {
     if (!newTeamName.trim()) return
     const t = await api.addTeam(newTeamName.trim())
-    setTeams(prev => [...prev, t])
-    setNewTeamName('')
-    loadStats()
+    setTeams(prev => [...prev, t]); setNewTeamName(''); loadStats()
   }
 
   async function handleRenameTeam(id) {
@@ -88,27 +69,20 @@ export default function AdminPage() {
   async function handleDeleteTeam(id) {
     if (!window.confirm('Delete this team and all its votes?')) return
     await api.deleteTeam(id)
-    setTeams(prev => prev.filter(t => t._id !== id))
-    loadStats()
+    setTeams(prev => prev.filter(t => t._id !== id)); loadStats()
   }
 
   async function handleResetVotes() {
     if (!window.confirm('Reset ALL votes? This cannot be undone.')) return
-    await api.resetVotes()
-    loadStats()
+    await api.resetVotes(); loadStats()
   }
 
-  async function loadStats() {
-    const s = await api.getStats()
-    setStats(s)
-  }
+  async function loadStats() { const s = await api.getStats(); setStats(s) }
 
   function downloadQR() {
     if (!qr?.qr) return
     const a = document.createElement('a')
-    a.href = qr.qr
-    a.download = 'hackvote-qr.png'
-    a.click()
+    a.href = qr.qr; a.download = 'hackvote-qr.png'; a.click()
   }
 
   if (!loggedIn) return (
@@ -137,9 +111,15 @@ export default function AdminPage() {
 
   return (
     <div className="admin-page slide-up">
+
       <div className="admin-header">
         <h1>Admin Panel</h1>
-        <button className="btn" onClick={logout}>Logout</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-success" onClick={() => window.open('/board', '_blank')}>
+            📊 Live Leaderboard
+          </button>
+          <button className="btn" onClick={logout}>Logout</button>
+        </div>
       </div>
 
       {stats && (
@@ -218,9 +198,25 @@ export default function AdminPage() {
       </section>
 
       <section className="admin-section">
+        <h3 className="section-title">Display Screen</h3>
+        <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 10 }}>
+          Open this on the projector or big screen for the live leaderboard.
+        </p>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button className="btn btn-success" onClick={() => window.open('/board', '_blank')}>
+            📊 Open Live Leaderboard
+          </button>
+          <code style={{ fontSize: 12, color: 'var(--text3)', background: 'var(--bg2)', padding: '6px 10px', borderRadius: 6 }}>
+            {window.location.origin}/board
+          </code>
+        </div>
+      </section>
+
+      <section className="admin-section">
         <h3 className="section-title">Danger Zone</h3>
         <button className="btn btn-danger" onClick={handleResetVotes}>🗑 Reset All Votes</button>
       </section>
+
     </div>
   )
 }
