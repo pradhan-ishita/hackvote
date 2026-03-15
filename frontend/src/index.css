@@ -30,7 +30,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Subtle grid background */
 body::before {
   content: '';
   position: fixed;
